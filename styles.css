@@ -26,6 +26,21 @@ body {
   min-height: 100vh;
 }
 
+[hidden] {
+  display: none !important;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
 .app {
   display: flex;
   min-height: 100vh;
@@ -104,6 +119,15 @@ body {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.tab-panel--active {
+  display: flex;
 }
 
 .topbar {
@@ -200,6 +224,16 @@ body {
   color: var(--muted);
   margin-top: 12px;
 }
+.scan__feedback {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.scan__feedback--error {
+  color: var(--danger);
+  font-weight: 600;
+}
 
 .pill {
   background: var(--accent);
@@ -287,6 +321,18 @@ body {
   display: grid;
   gap: 12px;
 }
+.table__body {
+  display: grid;
+  gap: 12px;
+}
+
+.table__empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 20px 12px;
+  border-radius: 12px;
+  background: #f8f9fe;
+}
 
 .table__row {
   display: grid;
@@ -332,6 +378,11 @@ body {
   display: grid;
   gap: 12px;
   list-style: none;
+}
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 12px;
 }
 
 .alerts li {
@@ -390,6 +441,10 @@ body {
 .btn--ghost {
   background: transparent;
   color: var(--primary);
+}
+.btn--ghost.btn--active {
+  background: var(--accent);
+  color: var(--primary-dark);
 }
 
 .btn--ghost:hover {
