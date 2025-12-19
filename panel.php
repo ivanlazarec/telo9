@@ -42,10 +42,16 @@ function ensure_schema(mysqli $db): void {
             quantity INT NOT NULL DEFAULT 1,
             price DECIMAL(10,2) NOT NULL DEFAULT 0,
             total DECIMAL(10,2) NOT NULL DEFAULT 0,
+            payment_method VARCHAR(30) NOT NULL DEFAULT 'efectivo',
             sold_at DATETIME NOT NULL,
             CONSTRAINT fk_sales_product FOREIGN KEY (product_id) REFERENCES products(id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8"
     );
+    
+    $column_result = $db->query("SHOW COLUMNS FROM sales LIKE 'payment_method'");
+    if ($column_result && $column_result->num_rows === 0) {
+        $db->query("ALTER TABLE sales ADD COLUMN payment_method VARCHAR(30) NOT NULL DEFAULT 'efectivo'");
+    }
 }
 
 function h(string $value): string {
@@ -98,10 +104,24 @@ if ($action === 'close_shift') {
 if ($action === 'sell_product') {
     $barcode = trim($_POST['barcode'] ?? '');
     $quantity = max(1, (int)($_POST['quantity'] ?? 1));
+    $payment_method = $_POST['payment_method'] ?? '';
+    $valid_payment_methods = [
+        'efectivo' => 'Efectivo',
+        'tarjeta_credito' => 'Tarjeta crédito',
+        'tarjeta_debito' => 'Tarjeta débito',
+        'transferencia' => 'Transferencia',
+    ];
 
     if ($barcode === '') {
         $error = 'Ingresá o escaneá un código de barras.';
+    } elseif (!array_key_exists($payment_method, $valid_payment_methods)) {
+        $error = 'Seleccioná un modo de venta válido.';
     } else {
+        $shift_result = $db->query("SELECT id FROM cash_shifts WHERE closed_at IS NULL ORDER BY opened_at DESC LIMIT 1");
+        $shift_row = $shift_result && $shift_result->num_rows > 0 ? $shift_result->fetch_assoc() : null;
+        if (!$shift_row) {
+            $error = 'Primero abrí la caja/turno para poder vender.';
+        } else {
         $stmt = $db->prepare('SELECT id, name, price, stock FROM products WHERE barcode = ? LIMIT 1');
         $stmt->bind_param('s', $barcode);
         $stmt->execute();
@@ -109,40 +129,37 @@ if ($action === 'sell_product') {
         $stmt->close();
 
         if (!$product) {
-            $error = 'No se encontró el producto con ese código.';
-        } elseif ($product['stock'] < $quantity) {
-            $error = 'Stock insuficiente. Disponible: ' . (int)$product['stock'];
-        } else {
-            $new_stock = (int)$product['stock'] - $quantity;
-            $price = (float)$product['price'];
-            $total = $price * $quantity;
+                $error = 'No se encontró el producto con ese código.';
+            } elseif ($product['stock'] < $quantity) {
+                $error = 'Stock insuficiente. Disponible: ' . (int)$product['stock'];
+            } else {
+                $new_stock = (int)$product['stock'] - $quantity;
+                $price = (float)$product['price'];
+                $total = $price * $quantity;
+                $shift_id = (int)$shift_row['id'];
+            
 
             $db->begin_transaction();
-            $stmt = $db->prepare('UPDATE products SET stock = ? WHERE id = ?');
-            $stmt->bind_param('ii', $new_stock, $product['id']);
-            $ok = $stmt->execute();
-            $stmt->close();
-
-            $shift_id = null;
-            $shift_result = $db->query("SELECT id FROM cash_shifts WHERE closed_at IS NULL ORDER BY opened_at DESC LIMIT 1");
-            if ($shift_result && $shift_result->num_rows > 0) {
-                $shift_row = $shift_result->fetch_assoc();
-                $shift_id = (int)$shift_row['id'];
-            }
-
-            if ($ok) {
-                $stmt = $db->prepare('INSERT INTO sales (product_id, shift_id, barcode, quantity, price, total, sold_at) VALUES (?, ?, ?, ?, ?, ?, NOW())');
-                $stmt->bind_param('iisidd', $product['id'], $shift_id, $barcode, $quantity, $price, $total);
+                $stmt = $db->prepare('UPDATE products SET stock = ? WHERE id = ?');
+                $stmt->bind_param('ii', $new_stock, $product['id']);
                 $ok = $stmt->execute();
                 $stmt->close();
-            }
+            
 
             if ($ok) {
-                $db->commit();
-                $message = 'Venta registrada. Stock restante: ' . $new_stock;
-            } else {
-                $db->rollback();
-                $error = 'No se pudo registrar la venta.';
+                    $stmt = $db->prepare('INSERT INTO sales (product_id, shift_id, barcode, quantity, price, total, payment_method, sold_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+                    $stmt->bind_param('iisidds', $product['id'], $shift_id, $barcode, $quantity, $price, $total, $payment_method);
+                    $ok = $stmt->execute();
+                    $stmt->close();
+                }
+
+                if ($ok) {
+                    $db->commit();
+                    $message = 'Venta registrada. Stock restante: ' . $new_stock;
+                } else {
+                    $db->rollback();
+                    $error = 'No se pudo registrar la venta.';
+                }
             }
         }
     }
@@ -150,9 +167,15 @@ if ($action === 'sell_product') {
 
 $shift_result = $db->query("SELECT * FROM cash_shifts WHERE closed_at IS NULL ORDER BY opened_at DESC LIMIT 1");
 $current_shift = $shift_result ? $shift_result->fetch_assoc() : null;
+$payment_labels = [
+    'efectivo' => 'Efectivo',
+    'tarjeta_credito' => 'Tarjeta crédito',
+    'tarjeta_debito' => 'Tarjeta débito',
+    'transferencia' => 'Transferencia',
+];
 
 $recent_sales = $db->query(
-    "SELECT s.id, s.barcode, s.quantity, s.total, s.sold_at, p.name
+    "SELECT s.id, s.barcode, s.quantity, s.total, s.sold_at, s.payment_method, p.name
      FROM sales s
      INNER JOIN products p ON p.id = s.product_id
      ORDER BY s.sold_at DESC
@@ -200,7 +223,8 @@ $recent_sales = $db->query(
             margin: 8px 0 4px;
         }
         input[type="text"],
-        input[type="number"] {
+        input[type="number"],
+        select {
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
@@ -284,6 +308,13 @@ $recent_sales = $db->query(
                 <input type="text" name="barcode" id="barcode" placeholder="Escaneá o ingresá el código" autofocus>
                 <label for="quantity">Cantidad</label>
                 <input type="number" name="quantity" id="quantity" value="1" min="1">
+                <label for="payment_method">Modo de venta</label>
+                <select name="payment_method" id="payment_method">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta_credito">Tarjeta crédito</option>
+                    <option value="tarjeta_debito">Tarjeta débito</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
                 <button type="submit">Vender producto</button>
             </form>
             <p>El stock se actualiza automáticamente al registrar la venta.</p>
@@ -298,6 +329,7 @@ $recent_sales = $db->query(
                             <th>Producto</th>
                             <th>Código</th>
                             <th>Cant.</th>
+                            <th>Pago</th>
                             <th>Total</th>
                             <th>Fecha</th>
                         </tr>
@@ -308,6 +340,7 @@ $recent_sales = $db->query(
                             <td><?php echo h($sale['name']); ?></td>
                             <td><?php echo h($sale['barcode']); ?></td>
                             <td><?php echo (int)$sale['quantity']; ?></td>
+                            <td><?php echo h($payment_labels[$sale['payment_method']] ?? $sale['payment_method']); ?></td>
                             <td>$<?php echo number_format((float)$sale['total'], 2, ',', '.'); ?></td>
                             <td><?php echo h($sale['sold_at']); ?></td>
                         </tr>
