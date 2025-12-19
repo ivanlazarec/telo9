@@ -241,7 +241,10 @@ $recent_sales = $db->query(
 </head>
 <body>
 <header>
-    <h1>Intenso Tandil - Panel Principal</h1>
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+        <h1>Intenso Tandil - Panel Principal</h1>
+        <a href="inventario.php" style="color:#93c5fd; text-decoration:none;">Ir a inventario →</a>
+    </div>
 </header>
 <main>
     <?php if ($message): ?>
