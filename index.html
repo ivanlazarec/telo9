@@ -115,7 +115,10 @@
               <p>Gestioná una lista extensa con búsqueda, filtros y edición directa.</p>
             </div>
             <div class="topbar__actions">
-              <button class="btn btn--primary js-add-product" type="button">Nuevo producto</button>
+              <button class="btn btn--primary" id="open-inventory-modal" type="button">
+                Agregar inventario
+              </button>
+              <button class="btn btn--ghost js-add-product" type="button">Nuevo producto</button>
             </div>
           </header>
 
@@ -138,13 +141,39 @@
                     </button>
                   </div>
                 </div>
+                <div class="inventory__bulk">
+                  <div>
+                    <h3>Actualización global de precios</h3>
+                    <p>Aplicá ajustes masivos y redondeo hacia arriba.</p>
+                  </div>
+                  <form class="inventory__bulk-form" id="bulk-form">
+                    <label class="sr-only" for="bulk-type">Tipo de ajuste</label>
+                    <select class="select" id="bulk-type" name="bulk-type">
+                      <option value="percent-add">Subir %</option>
+                      <option value="percent-subtract">Bajar %</option>
+                      <option value="amount-add">Sumar $</option>
+                      <option value="amount-subtract">Restar $</option>
+                    </select>
+                    <label class="sr-only" for="bulk-value">Valor</label>
+                    <input
+                      class="search"
+                      id="bulk-value"
+                      name="bulk-value"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Valor"
+                      required
+                    />
+                    <button class="btn btn--primary" type="submit">Aplicar</button>
+                  </form>
+                </div>
                 <div class="table" id="inventory-table">
                   <div class="table__row table__row--header">
                     <span>Código</span>
                     <span>Producto</span>
-                    <span>Stock</span>
+                    <span>Cantidad</span>
                     <span>Precio</span>
-                    <span>Acciones</span>
                   </div>
                   <div class="table__body" id="inventory-rows"></div>
                   <div class="table__empty" id="inventory-empty">
@@ -256,6 +285,44 @@
           <div class="modal__actions">
             <button class="btn btn--ghost" type="reset">Limpiar</button>
             <button class="btn btn--primary" id="modal-submit" type="submit">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+<div class="modal" id="inventory-modal">
+      <div class="modal__content">
+        <div class="modal__header">
+          <h3>Agregar inventario</h3>
+          <button class="btn btn--ghost" id="close-inventory-modal" type="button">
+            Cerrar
+          </button>
+        </div>
+        <form class="modal__body" id="inventory-form">
+          <label>
+            Código (escaneá o escribí)
+            <input
+              type="text"
+              name="code"
+              id="inventory-code"
+              placeholder="Escaneá el código o escribilo"
+              required
+            />
+          </label>
+          <label>
+            Cantidad a agregar
+            <input
+              type="number"
+              name="quantity"
+              id="inventory-quantity"
+              min="1"
+              placeholder="0"
+              required
+            />
+          </label>
+          <p class="modal__feedback" id="inventory-feedback"></p>
+          <div class="modal__actions">
+            <button class="btn btn--ghost" type="reset">Limpiar</button>
+            <button class="btn btn--primary" type="submit">Actualizar stock</button>
           </div>
         </form>
       </div>

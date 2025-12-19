@@ -12,11 +12,21 @@ const productCode = document.getElementById("product-code");
 const productName = document.getElementById("product-name");
 const productStock = document.getElementById("product-stock");
 const productPrice = document.getElementById("product-price");
+const inventoryModal = document.getElementById("inventory-modal");
+const openInventoryModalButton = document.getElementById("open-inventory-modal");
+const closeInventoryModalButton = document.getElementById("close-inventory-modal");
+const inventoryForm = document.getElementById("inventory-form");
+const inventoryCode = document.getElementById("inventory-code");
+const inventoryQuantity = document.getElementById("inventory-quantity");
+const inventoryFeedback = document.getElementById("inventory-feedback");
 const inventoryRows = document.getElementById("inventory-rows");
 const inventoryEmpty = document.getElementById("inventory-empty");
 const inventorySearch = document.getElementById("inventory-search");
 const filterLowButton = document.getElementById("filter-low");
 const filterResetButton = document.getElementById("filter-reset");
+const bulkForm = document.getElementById("bulk-form");
+const bulkType = document.getElementById("bulk-type");
+const bulkValue = document.getElementById("bulk-value");
 const alertsList = document.getElementById("alerts-list");
 const alertsEmpty = document.getElementById("alerts-empty");
 const statProducts = document.getElementById("stat-products");
@@ -134,7 +144,7 @@ const addItem = (code) => {
       total: info.price,
     });
   }
-resetFeedback();
+  resetFeedback();
   renderCart();
 };
 
@@ -168,11 +178,25 @@ const renderInventoryTable = () => {
     row.innerHTML = `
       <span>${item.code}</span>
       <span>${item.name}</span>
-      <span class="badge ${badge.className}">${item.stock} u.</span>
-      <span>${formatMoney(item.price)}</span>
-      <button class="btn btn--ghost" type="button" data-action="edit" data-code="${
-        item.code
-      }">Editar</button>
+      <div class="stock-meta">
+        <div class="quantity-control">
+          <button type="button" data-action="decrease" data-code="${item.code}">-</button>
+          <input type="number" min="0" step="1" value="${item.stock}" data-action="stock" data-code="${
+            item.code
+          }" />
+          <button type="button" data-action="increase" data-code="${item.code}">+</button>
+        </div>
+        <span class="badge ${badge.className}">${badge.label}</span>
+      </div>
+      <input
+        class="price-input"
+        type="number"
+        min="0"
+        step="1"
+        value="${item.price}"
+        data-action="price"
+        data-code="${item.code}"
+      />
     `;
     inventoryRows.appendChild(row);
   });
@@ -263,6 +287,53 @@ const updateInventory = (updatedItem) => {
   sortInventory();
   saveInventory(inventory);
 };
+const updateInventoryItem = (code, changes) => {
+  const index = inventory.findIndex((item) => item.code === code);
+  if (index === -1) {
+    return;
+  }
+  inventory[index] = { ...inventory[index], ...changes };
+  saveInventory(inventory);
+};
+
+const openInventoryModal = () => {
+  inventoryForm.reset();
+  inventoryFeedback.textContent = "";
+  inventoryModal.classList.add("modal--open");
+  inventoryCode.focus();
+};
+
+const closeInventoryModal = () => {
+  inventoryModal.classList.remove("modal--open");
+  inventoryFeedback.textContent = "";
+  inventoryForm.reset();
+};
+
+const applyBulkPricing = (type, value) => {
+  const adjustment = Number(value);
+  if (Number.isNaN(adjustment) || adjustment < 0) {
+    return;
+  }
+
+  inventory = inventory.map((item) => {
+    let updatedPrice = item.price;
+
+    if (type === "percent-add") {
+      updatedPrice = item.price * (1 + adjustment / 100);
+    } else if (type === "percent-subtract") {
+      updatedPrice = item.price * (1 - adjustment / 100);
+    } else if (type === "amount-add") {
+      updatedPrice = item.price + adjustment;
+    } else if (type === "amount-subtract") {
+      updatedPrice = item.price - adjustment;
+    }
+
+    updatedPrice = Math.max(0, Math.ceil(updatedPrice));
+    return { ...item, price: updatedPrice };
+  });
+
+  saveInventory(inventory);
+};
 
 const setActiveTab = (tabId) => {
   tabPanels.forEach((panel) => {
@@ -302,10 +373,42 @@ modal.addEventListener("click", (event) => {
     closeModal();
   }
 });
+openInventoryModalButton.addEventListener("click", openInventoryModal);
+closeInventoryModalButton.addEventListener("click", closeInventoryModal);
+inventoryModal.addEventListener("click", (event) => {
+  if (event.target === inventoryModal) {
+    closeInventoryModal();
+  }
+});
+
+inventoryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const code = inventoryCode.value.trim();
+  const quantity = Number(inventoryQuantity.value);
+
+  if (!code || Number.isNaN(quantity) || quantity <= 0) {
+    inventoryFeedback.textContent = "Ingresá un código y una cantidad válida.";
+    return;
+  }
+
+  const product = inventory.find((item) => item.code === code);
+  if (!product) {
+    inventoryFeedback.textContent = "No encontramos ese código en la base de datos.";
+    return;
+  }
+
+  updateInventoryItem(code, { stock: product.stock + quantity });
+  closeInventoryModal();
+  renderAll();
+});
+
+inventoryForm.addEventListener("reset", () => {
+  inventoryFeedback.textContent = "";
+});
 
 productForm.addEventListener("submit", (event) => {
   event.preventDefault();
-const code = productCode.value.trim();
+  const code = productCode.value.trim();
   const name = productName.value.trim();
   const stock = Number(productStock.value);
   const price = Number(productPrice.value);
@@ -314,21 +417,63 @@ const code = productCode.value.trim();
     return;
   }
 
- updateInventory({ code, name, stock, price });
+  updateInventory({ code, name, stock, price });
   closeModal();
- renderAll();
+  renderAll();
 });
 
 inventoryRows.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-action='edit']");
+  const button = event.target.closest("button[data-action]");
   if (!button) {
     return;
   }
-  const code = button.dataset.code;
+  const { action, code } = button.dataset;
   const product = inventory.find((item) => item.code === code);
-  if (product) {
-    openModal(product);
+  if (!product) {
+    return;
   }
+  if (action === "increase") {
+    updateInventoryItem(code, { stock: product.stock + 1 });
+  }
+
+  if (action === "decrease") {
+    updateInventoryItem(code, { stock: Math.max(0, product.stock - 1) });
+  }
+
+  renderAll();
+});
+
+inventoryRows.addEventListener("change", (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement)) {
+    return;
+  }
+
+  const { action, code } = input.dataset;
+  if (!action || !code) {
+    return;
+  }
+
+  const value = Number(input.value);
+  if (Number.isNaN(value)) {
+    return;
+  }
+
+  if (action === "stock") {
+    updateInventoryItem(code, { stock: Math.max(0, Math.floor(value)) });
+  }
+
+  if (action === "price") {
+    updateInventoryItem(code, { price: Math.max(0, value) });
+  }
+
+  renderAll();
+});
+
+bulkForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  applyBulkPricing(bulkType.value, bulkValue.value);
+  renderAll();
 });
 
 inventorySearch.addEventListener("input", (event) => {
