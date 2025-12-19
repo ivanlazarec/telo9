@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Intenso Tandil | Panel de Inventario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar">
+        <div class="brand">
+          <span class="brand__dot"></span>
+          <div>
+            <p class="brand__name">Intenso Tandil</p>
+            <p class="brand__tagline">Panel de operaciones</p>
+          </div>
+        </div>
+        <nav class="nav">
+          <a class="nav__link nav__link--active" href="#panel-principal">Panel principal</a>
+          <a class="nav__link" href="#inventario">Administrar inventario</a>
+          <a class="nav__link" href="#analiticas">Analíticas y alertas</a>
+        </nav>
+        <div class="sidebar__cta">
+          <h3>Escaneo rápido</h3>
+          <p>Conectá el lector de códigos y presioná enter para cargar productos.</p>
+          <button class="btn btn--light" type="button">Guía de conexión</button>
+        </div>
+      </aside>
+
+      <main class="content">
+        <header class="topbar">
+          <div>
+            <h1>Panel principal</h1>
+            <p>Operá ventas, carga por escáner y edición manual en un flujo ágil.</p>
+          </div>
+          <div class="topbar__actions">
+            <button class="btn btn--ghost" type="button">Cerrar caja</button>
+            <button class="btn btn--primary" type="button">Nueva venta</button>
+          </div>
+        </header>
+
+        <section class="grid">
+          <div class="card" id="panel-principal">
+            <div class="card__header">
+              <h2>Venta activa</h2>
+              <span class="status">Caja abierta</span>
+            </div>
+            <div class="card__body">
+              <form class="scan" id="scan-form">
+                <label for="barcode">Escanear o ingresar código</label>
+                <div class="scan__row">
+                  <input
+                    id="barcode"
+                    name="barcode"
+                    type="text"
+                    placeholder="Ej: 7791234567890"
+                    autocomplete="off"
+                  />
+                  <button class="btn btn--primary" type="submit">Agregar</button>
+                </div>
+                <div class="scan__meta">
+                  <span>Modo de ingreso: Pistola / Manual</span>
+                  <div class="pill">Cantidad rápida: <strong>1</strong></div>
+                </div>
+              </form>
+
+              <div class="cart">
+                <div class="cart__header">
+                  <h3>Productos cargados</h3>
+                  <button class="btn btn--ghost" type="button">Vaciar</button>
+                </div>
+                <div class="cart__list" id="cart-list">
+                  <div class="cart__item cart__item--empty">
+                    <p>Esperando lectura de código o carga manual.</p>
+                  </div>
+                </div>
+                <div class="cart__footer">
+                  <div>
+                    <p>Total parcial</p>
+                    <strong id="cart-total">$ 0</strong>
+                  </div>
+                  <div class="cart__actions">
+                    <select class="select">
+                      <option>Efectivo</option>
+                      <option>Tarjeta débito</option>
+                      <option>Tarjeta crédito</option>
+                      <option>Transferencia</option>
+                    </select>
+                    <button class="btn btn--primary" type="button">Cobrar</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" id="inventario">
+            <div class="card__header">
+              <h2>Administrar inventario</h2>
+              <button class="btn btn--primary" id="add-product" type="button">Nuevo producto</button>
+            </div>
+            <div class="card__body">
+              <div class="inventory__toolbar">
+                <input class="search" type="search" placeholder="Buscar por nombre o código" />
+                <div class="inventory__filters">
+                  <button class="btn btn--ghost" type="button">Categorías</button>
+                  <button class="btn btn--ghost" type="button">Stock bajo</button>
+                </div>
+              </div>
+              <div class="table">
+                <div class="table__row table__row--header">
+                  <span>Código</span>
+                  <span>Producto</span>
+                  <span>Stock</span>
+                  <span>Precio</span>
+                  <span>Acciones</span>
+                </div>
+                <div class="table__row">
+                  <span>7798108840007</span>
+                  <span>Yerba orgánica 500g</span>
+                  <span class="badge badge--ok">120 u.</span>
+                  <span>$ 2.300</span>
+                  <button class="btn btn--ghost" type="button">Editar</button>
+                </div>
+                <div class="table__row">
+                  <span>7791340076049</span>
+                  <span>Galletas integrales</span>
+                  <span class="badge badge--warn">18 u.</span>
+                  <span>$ 1.150</span>
+                  <button class="btn btn--ghost" type="button">Editar</button>
+                </div>
+                <div class="table__row">
+                  <span>7790742302201</span>
+                  <span>Leche de almendras</span>
+                  <span class="badge badge--danger">5 u.</span>
+                  <span>$ 1.980</span>
+                  <button class="btn btn--ghost" type="button">Editar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="grid grid--secondary" id="analiticas">
+          <div class="card">
+            <div class="card__header">
+              <h2>Alertas de reposición</h2>
+              <button class="btn btn--ghost" type="button">Configurar</button>
+            </div>
+            <div class="card__body">
+              <ul class="alerts">
+                <li>
+                  <div>
+                    <h4>Stock crítico</h4>
+                    <p>Leche de almendras (5 u.)</p>
+                  </div>
+                  <span class="badge badge--danger">Urgente</span>
+                </li>
+                <li>
+                  <div>
+                    <h4>Stock bajo</h4>
+                    <p>Galletas integrales (18 u.)</p>
+                  </div>
+                  <span class="badge badge--warn">Próximo</span>
+                </li>
+                <li>
+                  <div>
+                    <h4>Reposición sugerida</h4>
+                    <p>Detergente ecológico (35 u.)</p>
+                  </div>
+                  <span class="badge badge--ok">Normal</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card__header">
+              <h2>Resumen diario</h2>
+              <button class="btn btn--ghost" type="button">Exportar</button>
+            </div>
+            <div class="card__body">
+              <div class="stats">
+                <div class="stat">
+                  <p>Ventas</p>
+                  <strong>$ 452.830</strong>
+                  <span>+12% vs ayer</span>
+                </div>
+                <div class="stat">
+                  <p>Tickets</p>
+                  <strong>92</strong>
+                  <span>Promedio $ 4.920</span>
+                </div>
+                <div class="stat">
+                  <p>Productos cargados</p>
+                  <strong>1.245</strong>
+                  <span>40% por escáner</span>
+                </div>
+              </div>
+              <div class="note">
+                <h4>Próximos pasos</h4>
+                <p>
+                  Incorporá gráficos avanzados, análisis de márgenes y recordatorios automáticos de
+                  reposición.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal" id="modal">
+      <div class="modal__content">
+        <div class="modal__header">
+          <h3>Nuevo producto</h3>
+          <button class="btn btn--ghost" id="close-modal" type="button">Cerrar</button>
+        </div>
+        <form class="modal__body" id="product-form">
+          <label>
+            Código de barras
+            <input type="text" name="code" placeholder="Escaneá o escribí el código" required />
+          </label>
+          <label>
+            Nombre del producto
+            <input type="text" name="name" placeholder="Ej: Café molido" required />
+          </label>
+          <label>
+            Stock inicial
+            <input type="number" name="stock" min="0" placeholder="0" required />
+          </label>
+          <label>
+            Precio
+            <input type="number" name="price" min="0" step="0.01" placeholder="0" required />
+          </label>
+          <div class="modal__actions">
+            <button class="btn btn--ghost" type="reset">Limpiar</button>
+            <button class="btn btn--primary" type="submit">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
